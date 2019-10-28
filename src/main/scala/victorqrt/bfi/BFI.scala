@@ -10,7 +10,8 @@ object BFI extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] =
     for {
-      test <- IO { BFParser.parseAll(BFParser.expr, hw) }
-      code <- IO { println(test) } as ExitCode.Success
+      test   <- IO { BFParser.parseAll(BFParser.expr, hw) }
+      memory <- IO { new BFMemory }
+      code   <- IO { println(test) } as ExitCode.Success
     } yield code
 }

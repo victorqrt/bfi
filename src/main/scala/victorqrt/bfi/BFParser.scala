@@ -1,5 +1,7 @@
 package victorqrt.bfi
 
+import cats.effect._
+
 import scala.util.parsing.combinator._
 
 object BFParser extends RegexParsers {
@@ -25,4 +27,7 @@ object BFParser extends RegexParsers {
 
   def expr: Parser[List[Expression]] =
     rep(op | jmp)
+
+  def apply(source: String): IO[ParseResult[List[Expression]]] =
+    IO { parseAll(expr, source) }
 }
