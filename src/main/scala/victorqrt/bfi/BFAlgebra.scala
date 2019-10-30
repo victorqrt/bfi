@@ -9,30 +9,43 @@ import victorqrt.bfi.BFParser._
 object BFAlgebra {
 
   sealed trait BFAlgebra[A]
-  final case class Shift(c: Char) extends BFAlgebra[State[BFMemory, Unit]]
-  final case class Mutate(c: Char) extends BFAlgebra[State[BFMemory, Unit]]
-  final case class Jump() extends BFAlgebra[State[BFMemory, Unit]]
-  final case class Input() extends BFAlgebra[Unit]
-  final case class Output() extends BFAlgebra[Unit]
+  final case class Jump(es: List[Expression], s: BFState) extends BFAlgebra[Unit]
+  final case class Shift(o: Op, s: BFState)               extends BFAlgebra[Unit]
+  final case class Mutate(o: Op, s: BFState)              extends BFAlgebra[Unit]
+  final case class Input(s: BFState)                      extends BFAlgebra[Unit]
+  final case class Output(s: BFState)                     extends BFAlgebra[Unit]
 
-  type FreeBF[A] = Free[BFAlgebra, A]
+  type FreeBF[A]  = Free[BFAlgebra, A]
+  type BFState = State[BFMemory, Unit]
 
-  def input: FreeBF[Unit] =
-    Free liftF Input()
+  def jump(es: List[Expression], s: BFState): FreeBF[Unit] =
+    Free liftF Jump(es, s)
 
-  def output: FreeBF[Unit] =
-    Free liftF Output()
+  def shift(o: Op, s: BFState): FreeBF[Unit] =
+    Free liftF Shift(o, s)
 
-  def represent(exprs: List[Expression]) =
+  def mutate(o: Op, s: BFState): FreeBF[Unit] =
+    Free liftF Mutate(o, s)
+
+  def input(s: BFState): FreeBF[Unit] =
+    Free liftF Input(s)
+
+  def output(s: BFState): FreeBF[Unit] =
+    Free liftF Output(s)
+
+  def represent(exprs: List[Expression], s: BFState): List[FreeBF[_]] =
     exprs map {
 
-      case Op(c)   => c match {
-        case '<' | '>' => Shift(c)
-        case '+' | '-' => Mutate(c)
-        case '.'       => Output()
-        case ','       => Input()
-      }
+      case Jmp(es)   => jump(es, s)
 
-      //case Jmp(es) =>
+      case o @ Op(c) =>
+        c match {
+          case '<' | '>' => shift(o, s)
+          case '+' | '-' => mutate(o, s)
+          case '.'       => output(s)
+          case ','       => input(s)
+        }
     }
+
+  //val BFInterpreterIO
 }
