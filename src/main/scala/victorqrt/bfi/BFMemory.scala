@@ -2,21 +2,36 @@ package victorqrt.bfi
 
 import scala.collection.mutable.ArrayBuffer
 
-class BFMemory(memory: ArrayBuffer[Byte], pointer: Int) {
+import BFParser._
 
-  private def mutate(increase: Boolean): BFMemory = {
-    val b = if (increase) 1 else -1
+class BFMemory(
+  val memory: ArrayBuffer[Byte],
+  val pointer: Int,
+  val program: List[Expression]
+) {
 
-    if (pointer > memory.size) {
-      memory ++= ArrayBuffer.fill(pointer - memory.size)(0.toByte)
+  private def checkRealloc {
+    if (pointer >= memory.size) {
+      memory ++= ArrayBuffer.fill(pointer - memory.size + 1)(0.toByte)
     }
-
-    memory(pointer) = (memory(pointer) + b).toByte
-    new BFMemory(memory, pointer)
   }
 
-  def increase { mutate(true) }
-  def decrease { mutate(false) }
+  private def mutate(increment: Boolean): BFMemory = {
+    checkRealloc
+    memory(pointer) = (memory(pointer) + (if (increment) 1 else -1)).toByte
+    new BFMemory(memory, pointer, program)
+  }
+
+  def get: Byte = {
+    checkRealloc
+    memory(pointer)
+  }
+
+  def getAsString = new String(Array(get), "utf-8")
+
+  def increment = mutate(true)
+  def decrement = mutate(false)
+  def zero      = get == 0
 
   def shift(right: Boolean): BFMemory =
     new BFMemory(
@@ -24,6 +39,12 @@ class BFMemory(memory: ArrayBuffer[Byte], pointer: Int) {
       pointer + {
         if (right) 1
         else if (pointer == 0) 0 else -1
-      }
+      },
+      program
     )
+}
+
+object BFMemory {
+  def apply(es: List[Expression]) =
+    new BFMemory(ArrayBuffer.fill(1)(0.toByte), 0, es)
 }
