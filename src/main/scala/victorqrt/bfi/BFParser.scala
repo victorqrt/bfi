@@ -8,6 +8,7 @@ object BFParser extends RegexParsers {
   sealed trait Expression
   final case class Jmp(block: List[Expression]) extends Expression
   final case class Op(c: Char)                  extends Expression
+  final case class Read(c: Char)                extends Expression
 
   override protected val whiteSpace = """[^<>+-\.,\[\]]+""".r
 

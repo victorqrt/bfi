@@ -28,6 +28,11 @@ class BFMemory(
       pointer + (if (right) 1 else -1)
     )
 
+  def updated(b: Byte): BFMemory = {
+    val mem = checkRealloc
+    new BFMemory(mem.updated(pointer, b), pointer)
+  }
+
   def get       = checkRealloc(pointer)
   def getAsStr  = new String(Array(get), "utf-8")
   def increment = mutate(true)
