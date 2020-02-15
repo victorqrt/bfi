@@ -1,7 +1,7 @@
-all: jar
+all: bfi.jar
 	cp $(shell find target/ | grep bfi.jar) .
 
-jar:
+bfi.jar:
 	sbt assembly
 
 native: all
