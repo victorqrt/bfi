@@ -13,24 +13,36 @@ object BFI extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     for {
       prog <- BFParser(hw)
-      mem   <- IO { BFMemory(prog.get) }
-      _     <- prog.get
+      mem  <- IO { BFMemory.apply }
+      _    <- prog.get
                    .map(execute)
                    .sequence
-                   .run(mem)
-      _     <- IO { println(mem.memory) }
+                   .runA(mem)
     } yield {
       ExitCode.Success
     }
 
-  def dispatch(e: Expression, mem: BFMemory): IO[Unit] =
+  def execute(e: Expression): StateT[IO, BFMemory, Unit] =
+    for {
+      mem <- StateT.get[IO, BFMemory]
+      _   <- dispatch(e, mem)
+      _   <- StateT modify[IO, BFMemory] (m => update(e, m))
+    } yield ()
+
+  def dispatch(e: Expression, mem: BFMemory): StateT[IO, BFMemory, Unit] =
     e match {
-      case Op('.') => IO { print(mem.getAsString) }
-      case Jmp(es) => if (mem.zero) IO.unit
-                      else es.map(execute)
-                             .sequence
-                             .runA(mem) >> IO.unit
-      case _       => IO.unit
+      case Op('.') => StateT liftF IO { print(mem.getAsStr) }
+      case Jmp(es) =>
+        if (mem.zero) StateT liftF IO.unit
+        else for {
+               _   <- es.map(execute).sequence
+               m   <- StateT.get[IO, BFMemory]
+               res <- if (!m.zero) dispatch(e, m)
+                      else StateT
+                             .liftF(IO.unit)
+                             .asInstanceOf[StateT[IO, BFMemory, Unit]]
+             } yield res
+      case _       => StateT liftF IO.unit
     }
 
   def update(e: Expression, mem: BFMemory): BFMemory =
@@ -41,11 +53,4 @@ object BFI extends IOApp {
       case Op('>') => mem shift true
       case _       => mem
     }
-
-  def execute(e: Expression): StateT[IO, BFMemory, Unit] =
-    for {
-      mem <- StateT.get[IO, BFMemory]
-      _   <- StateT liftF dispatch(e, mem)
-      _   <- StateT modify[IO, BFMemory] (m => update(e, m))
-    } yield ()
 }

@@ -1,4 +1,6 @@
-scalaVersion := "2.13.1"
+scalaVersion := "2.12.8"
+scalacOptions += "-Ypartial-unification"
+
 assemblyJarName in assembly := "bfi.jar"
 
 libraryDependencies ++= Seq(

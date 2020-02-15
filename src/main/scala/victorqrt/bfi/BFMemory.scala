@@ -6,8 +6,7 @@ import BFParser._
 
 class BFMemory(
   val memory: ArrayBuffer[Byte],
-  val pointer: Int,
-  val program: List[Expression]
+  val pointer: Int
 ) {
 
   private def checkRealloc {
@@ -19,7 +18,7 @@ class BFMemory(
   private def mutate(increment: Boolean): BFMemory = {
     checkRealloc
     memory(pointer) = (memory(pointer) + (if (increment) 1 else -1)).toByte
-    new BFMemory(memory, pointer, program)
+    new BFMemory(memory, pointer)
   }
 
   def get: Byte = {
@@ -27,24 +26,20 @@ class BFMemory(
     memory(pointer)
   }
 
-  def getAsString = new String(Array(get), "utf-8")
-
   def increment = mutate(true)
   def decrement = mutate(false)
+  def getAsStr  = new String(Array(get), "utf-8")
   def zero      = get == 0
 
   def shift(right: Boolean): BFMemory =
-    new BFMemory(
+    if (pointer == 0 && !right) this
+    else new BFMemory(
       memory,
-      pointer + {
-        if (right) 1
-        else if (pointer == 0) 0 else -1
-      },
-      program
+      pointer + (if (right) 1 else -1)
     )
 }
 
 object BFMemory {
-  def apply(es: List[Expression]) =
-    new BFMemory(ArrayBuffer.fill(1)(0.toByte), 0, es)
+  def apply =
+    new BFMemory(ArrayBuffer.fill(1)(0.toByte), 0)
 }
