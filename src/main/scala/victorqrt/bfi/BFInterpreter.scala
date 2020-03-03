@@ -1,43 +1,47 @@
 package victorqrt.bfi
 
+import cats.Monad
 import cats.data.StateT
-import cats.effect.IO
+import cats.effect._
 import cats.implicits._
+import cats.mtl._
+import cats.mtl.instances.all._
 
 import BFParser._
 
 object BFInterpreter {
 
- def execute(e: Expression): StateT[IO, BFMemory, Unit] =
+  type MemoryState[F[_]] = MonadState[F, BFMemory]
+
+  def execute[F[_] : LiftIO : MemoryState : Monad]
+    (e: Expression): F[Unit] =
     for {
-      mem <- StateT.get[IO, BFMemory]
-      _   <- dispatch(e, mem)
-      _   <- StateT modify[IO, BFMemory] (m => update(e, m))
+      mem <- implicitly[MemoryState[F]].get
+      _   <- dispatch[F](e, mem)
+      _   <- implicitly[MemoryState[F]] modify (m => update(e, m))
     } yield ()
 
-  def dispatch(e: Expression, mem: BFMemory): StateT[IO, BFMemory, Unit] =
+  def dispatch[F[_] : LiftIO : MemoryState : Monad]
+    (e: Expression, mem: BFMemory): F[Unit] =
     e match {
-
       case Jmp(es) =>
-        if (mem.zero) StateT liftF IO.unit
+        if (mem.zero) IO.unit.to[F]
         else for {
-               _   <- es.map(execute).sequence
-               m   <- StateT.get[IO, BFMemory]
-               res <- if (!m.zero) dispatch(e, m)
-                      else StateT
-                             .liftF(IO.unit)
-                             .asInstanceOf[StateT[IO, BFMemory, Unit]]
+               _   <- es.map(execute[F]).sequence
+               m   <- implicitly[MemoryState[F]].get
+               res <- if (!m.zero) dispatch[F](e, m)
+                      else IO.unit.to[F]
              } yield res
 
-      case Op('.') => StateT liftF IO { print(mem.getAsStr) }
+      case Op('.') => IO { print(mem.getAsStr) }.to[F]
 
       case Op(',') =>
         for {
-          c <- StateT liftF IO { readChar}
-          _ <- execute(Read(c))
+          c <- IO { io.StdIn.readChar }.to[F]
+          _ <- execute[F](Read(c))
         } yield ()
 
-      case _       => StateT liftF IO.unit
+      case _       => IO.unit.to[F]
     }
 
   def update(e: Expression, mem: BFMemory): BFMemory =

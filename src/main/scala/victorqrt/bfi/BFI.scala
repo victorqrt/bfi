@@ -1,7 +1,9 @@
 package victorqrt.bfi
 
+import cats.data._
 import cats.effect._
 import cats.implicits._
+import cats.mtl.instances.all._
 import scala.io.Source
 
 import BFInterpreter._
@@ -13,6 +15,8 @@ object BFI extends IOApp {
     System.exit(1)
   }
 
+  type Stack[R] = StateT[IO, BFMemory, R]
+
   def run(args: List[String]): IO[ExitCode] =
     for {
       file <- IO { args(0) } handleErrorWith { _ => usage }
@@ -22,7 +26,7 @@ object BFI extends IOApp {
       prog <- BFParser(src)
       mem  <- IO { BFMemory.apply }
       _    <- prog.get
-                  .map(execute)
+                  .map(execute[Stack])
                   .sequence
                   .runA(mem)
     } yield {
