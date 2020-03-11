@@ -1,7 +1,5 @@
 package victorqrt.bfi
 
-import BFParser._
-
 class BFMemory(
   val memory: List[Byte],
   val pointer: Int
@@ -12,14 +10,8 @@ class BFMemory(
     else memory ++ List.fill(pointer - memory.size + 1)(0.toByte)
   }
 
-  private def mutate(increment: Boolean): BFMemory = {
-    val mem = checkRealloc
-    val inc = if (increment) 1 else -1
-    new BFMemory(
-      mem.updated(pointer, (mem(pointer) + inc).toByte),
-      pointer
-    )
-  }
+  private def mutate(increment: Boolean): BFMemory =
+    this updated (checkRealloc(pointer) + (if (increment) 1 else -1)).toByte
 
   def shift(right: Boolean): BFMemory =
     if (pointer == 0 && !right) this
@@ -28,10 +20,8 @@ class BFMemory(
       pointer + (if (right) 1 else -1)
     )
 
-  def updated(b: Byte): BFMemory = {
-    val mem = checkRealloc
-    new BFMemory(mem.updated(pointer, b), pointer)
-  }
+  def updated(b: Byte): BFMemory =
+    new BFMemory(checkRealloc.updated(pointer, b), pointer)
 
   def get       = checkRealloc(pointer)
   def getAsStr  = new String(Array(get), "utf-8")

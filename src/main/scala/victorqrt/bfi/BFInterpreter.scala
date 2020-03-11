@@ -1,7 +1,6 @@
 package victorqrt.bfi
 
 import cats.Monad
-import cats.data.StateT
 import cats.effect._
 import cats.implicits._
 import cats.mtl._
@@ -29,8 +28,7 @@ object BFInterpreter {
         else for {
                _   <- es.map(execute[F]).sequence
                m   <- implicitly[MemoryState[F]].get
-               res <- if (!m.zero) dispatch[F](e, m)
-                      else IO.unit.to[F]
+               res <- dispatch[F](e, m)
              } yield res
 
       case Op('.') => IO { print(mem.getAsStr) }.to[F]
