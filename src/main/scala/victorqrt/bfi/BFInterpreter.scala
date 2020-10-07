@@ -4,13 +4,12 @@ import cats.Monad
 import cats.effect._
 import cats.implicits._
 import cats.mtl._
-import cats.mtl.instances.all._
 
 import BFParser._
 
 object BFInterpreter {
 
-  type MemoryState[F[_]] = MonadState[F, BFMemory]
+  type MemoryState[F[_]] = Stateful[F, BFMemory]
 
   def execute[F[_] : LiftIO : MemoryState : Monad]
     (e: Expression): F[Unit] =

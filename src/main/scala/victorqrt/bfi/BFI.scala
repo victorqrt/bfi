@@ -3,7 +3,6 @@ package victorqrt.bfi
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import cats.mtl.instances.all._
 import scala.io.Source
 
 import BFInterpreter._
@@ -21,7 +20,7 @@ object BFI extends IOApp {
     for {
       file <- IO { args(0) } handleErrorWith { _ => usage }
       src  <- Resource
-                .fromAutoCloseable(IO { Source.fromFile(file.toString) } )
+                .fromAutoCloseable(IO { Source.fromFile(file.toString) })
                 .use(s => IO { s.mkString })
       prog <- BFParser(src)
       mem  <- IO { BFMemory.apply }
