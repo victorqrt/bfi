@@ -1,5 +1,4 @@
 all: bfi.jar
-	cp $(shell find target/ | grep bfi.jar) .
 
 bfi: bfi.jar
 	${GRAALVM_HOME}/bin/native-image --allow-incomplete-classpath --no-server --no-fallback --initialize-at-build-time --static -jar bfi.jar

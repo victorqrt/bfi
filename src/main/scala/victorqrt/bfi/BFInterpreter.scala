@@ -1,53 +1,55 @@
 package victorqrt.bfi
 
+
 import cats.Monad
 import cats.effect._
 import cats.implicits._
 import cats.mtl._
 
-import BFParser._
 
-object BFInterpreter {
+import BFParser._
+import BFParser.Expression._
+
+
+object BFInterpreter:
 
   type MemoryState[F[_]] = Stateful[F, BFMemory]
 
   def execute[F[_] : LiftIO : MemoryState : Monad]
     (e: Expression): F[Unit] =
-    for {
-      mem <- implicitly[MemoryState[F]].get
+    for
+      mem <- summon[MemoryState[F]].get
       _   <- dispatch[F](e, mem)
-      _   <- implicitly[MemoryState[F]] modify (m => update(e, m))
-    } yield ()
+      _   <- summon[MemoryState[F]] modify (m => update(e, m))
+    yield ()
 
   def dispatch[F[_] : LiftIO : MemoryState : Monad]
     (e: Expression, mem: BFMemory): F[Unit] =
-    e match {
+
+    e match
       case Jmp(es) =>
         if (mem.zero) IO.unit.to[F]
-        else for {
-               _   <- es.map(execute[F]).sequence
-               m   <- implicitly[MemoryState[F]].get
-               res <- dispatch[F](e, m)
-             } yield res
+        else for
+          _   <- es.map(execute[F]).sequence
+          m   <- summon[MemoryState[F]].get
+          res <- dispatch[F](e, m)
+        yield res
 
-      case Op('.') => IO { print(mem.getAsStr) }.to[F]
+      case Op('.') => IO(print(mem.getAsStr)).to[F]
 
       case Op(',') =>
-        for {
+        for
           c <- IO { io.StdIn.readChar }.to[F]
           _ <- execute[F](Read(c))
-        } yield ()
+        yield ()
 
       case _       => IO.unit.to[F]
-    }
 
   def update(e: Expression, mem: BFMemory): BFMemory =
-    e match {
+    e match
       case Op('+') => mem.increment
       case Op('-') => mem.decrement
       case Op('<') => mem shift false
       case Op('>') => mem shift true
       case Read(c) => mem updated c.toByte
       case _       => mem
-    }
-}

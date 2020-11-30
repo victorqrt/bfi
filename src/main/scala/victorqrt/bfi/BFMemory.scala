@@ -1,14 +1,11 @@
 package victorqrt.bfi
 
-class BFMemory(
-  val memory: List[Byte],
-  val pointer: Int
-) {
 
-  private def checkRealloc: List[Byte] = {
+class BFMemory(val memory: List[Byte], val pointer: Int):
+
+  private def checkRealloc: List[Byte] =
     if (pointer < memory.size) memory
     else memory ++ List.fill(pointer - memory.size + 1)(0.toByte)
-  }
 
   private def mutate(increment: Boolean): BFMemory =
     this updated (checkRealloc(pointer) + (if (increment) 1 else -1)).toByte
@@ -28,9 +25,7 @@ class BFMemory(
   def increment = mutate(true)
   def decrement = mutate(false)
   def zero      = get == 0
-}
 
-object BFMemory {
-  def apply =
-    new BFMemory(List.fill(1)(0.toByte), 0)
-}
+
+object BFMemory:
+  def apply = new BFMemory(List.fill(1)(0.toByte), 0)
