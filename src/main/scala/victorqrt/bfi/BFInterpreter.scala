@@ -15,7 +15,7 @@ object BFInterpreter:
 
   type MemoryState[F[_]] = Stateful[F, BFMemory]
 
-  def execute[F[_] : LiftIO : MemoryState : Monad]
+  def execute[F[_] : Sync : MemoryState : Monad]
     (e: Expression): F[Unit] =
     for
       mem <- summon[MemoryState[F]].get
@@ -23,27 +23,27 @@ object BFInterpreter:
       _   <- summon[MemoryState[F]] modify (m => update(e, m))
     yield ()
 
-  def dispatch[F[_] : LiftIO : MemoryState : Monad]
+  def dispatch[F[_] : Sync : MemoryState : Monad]
     (e: Expression, mem: BFMemory): F[Unit] =
 
     e match
       case Jmp(es) =>
-        if (mem.zero) IO.unit.to[F]
+        if mem.zero then Sync[F] delay ()
         else for
           _   <- es.map(execute[F]).sequence
           m   <- summon[MemoryState[F]].get
           res <- dispatch[F](e, m)
         yield res
 
-      case Op('.') => IO(print(mem.getAsStr)).to[F]
+      case Op('.') => Sync[F] delay print(mem.getAsStr)
 
       case Op(',') =>
         for
-          c <- IO { io.StdIn.readChar }.to[F]
+          c <- Sync[F] delay io.StdIn.readChar
           _ <- execute[F](Read(c))
         yield ()
 
-      case _       => IO.unit.to[F]
+      case _       => Sync[F] delay ()
 
   def update(e: Expression, mem: BFMemory): BFMemory =
     e match
