@@ -15,23 +15,26 @@ object BFInterpreter:
 
   type MemoryState[F[_]] = Stateful[F, BFMemory]
 
+  inline def FState[F[_] : MemoryState] = summon
+
   def execute[F[_] : Sync : MemoryState : Monad]
     (e: Expression): F[Unit] =
     for
-      mem <- summon[MemoryState[F]].get
+      mem <- FState.get
       _   <- dispatch[F](e, mem)
-      _   <- summon[MemoryState[F]] modify (m => update(e, m))
+      _   <- FState modify (m => update(e, m))
     yield ()
 
   def dispatch[F[_] : Sync : MemoryState : Monad]
     (e: Expression, mem: BFMemory): F[Unit] =
 
     e match
+
       case Jmp(es) =>
         if mem.zero then Sync[F] delay ()
         else for
           _   <- es.map(execute[F]).sequence
-          m   <- summon[MemoryState[F]].get
+          m   <- FState.get
           res <- dispatch[F](e, m)
         yield res
 

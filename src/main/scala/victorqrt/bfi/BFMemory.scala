@@ -28,4 +28,5 @@ class BFMemory(val memory: Array[Byte], val pointer: Int):
 
 
 object BFMemory:
+
   def apply = new BFMemory(Array.fill(64)(0.toByte), 0)

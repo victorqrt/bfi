@@ -14,7 +14,7 @@ object BFI extends IOApp:
 
   val usage = IO {
     println("Usage: ./bfi <script>")
-    System.exit(1)
+    sys.exit(1)
   }
 
   type Stack[R] = StateT[IO, BFMemory, R]
