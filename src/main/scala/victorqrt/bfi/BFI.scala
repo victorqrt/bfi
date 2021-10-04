@@ -23,12 +23,11 @@ object BFI extends IOApp:
     for
       file <- IO(args(0)) handleErrorWith (_ => usage)
       src  <- Resource
-                .fromAutoCloseable(IO(Source.fromFile(file.toString)))
-                .use(s => IO(s.mkString))
-      prog <- BFParser(src)
-      mem  <- IO (BFMemory.apply)
-      _    <- prog.get
-                  .map(execute[Stack])
+                .fromAutoCloseable(Source.fromFile(file.toString).pure[IO])
+                .use(s => s.mkString.pure[IO])
+      prog <- BFParser.apply(src).pure[IO]
+      mem  <- BFMemory.apply.pure[IO]
+      _    <- prog.map(execute[Stack])
                   .sequence
                   .runA(mem)
     yield

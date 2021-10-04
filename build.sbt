@@ -10,6 +10,6 @@ lazy val root = project
       ( "org.typelevel" %% "cats-core"   % "2.6.1"
       , "org.typelevel" %% "cats-effect" % "3.2.9"
       , "org.typelevel" %% "cats-mtl"    % "1.2.1"
-      , "org.scala-lang.modules" %% "scala-parser-combinators" % "2.0.0"
+      , "org.scala-lang.modules" %% "scala-parser-combinators" % "2.1.0"
       )
   )
