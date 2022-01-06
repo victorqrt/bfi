@@ -8,7 +8,7 @@ import cats.mtl._
 
 
 import BFParser._
-import BFParser.Instruction._
+import BFParser.Op._
 
 
 object BFInterpreter:
@@ -16,9 +16,10 @@ object BFInterpreter:
   type MemoryState[F[_]] = Stateful[F, BFMemory]
 
   inline def FState[F[_] : MemoryState] = summon
+  inline def FSyn[F[_]   : Sync]        = summon
 
-  def execute[F[_] : Sync : MemoryState : Monad]
-    (op: Instruction): F[Unit] =
+  def execute[F[_]](op: Op)
+    (using MS: MemoryState[F], S: Sync[F], M: Monad[F]): F[Unit] =
     for
       mem <- FState.get
       _   <- dispatch[F](op, mem)
@@ -26,31 +27,29 @@ object BFInterpreter:
     yield ()
 
   def dispatch[F[_] : Sync : MemoryState : Monad]
-    (op: Instruction, mem: BFMemory): F[Unit] =
-
+    (op: Op, mem: BFMemory): F[Unit] =
     op match
-
       case Jump(ops) =>
-        if mem.zero then Sync[F] delay ()
+        if mem.zero then ().pure[F]
         else for
           _   <- ops.map(execute[F]).sequence
           m   <- FState.get
           res <- dispatch[F](op, m)
         yield res
 
-      case Print => Sync[F] delay print(mem.getAsStr)
-
-      case Read =>
+      case Read  =>
         for
-          c <- Sync[F] delay io.StdIn.readChar
+          c <- FSyn blocking Console.in.read.toChar
           _ <- FState modify (_ updated c.toByte)
         yield ()
 
-      case _       => Sync[F] delay ()
+      case Print => FSyn delay print(mem.get.toChar)
 
-  def update(e: Instruction, mem: BFMemory): BFMemory =
+      case _     => ().pure[F]
+
+  def update(e: Op, mem: BFMemory): BFMemory =
     e match
-      case Add(b)      => mem add b
-      case ShiftPtr(n) => mem shift n
-      case Zero        => mem updated 0
-      case _           => mem
+      case Add(b)   => mem add b
+      case Shift(n) => mem shift n
+      case Zero     => mem updated 0
+      case _        => mem
