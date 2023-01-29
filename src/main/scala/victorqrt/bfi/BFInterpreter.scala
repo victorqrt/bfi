@@ -18,15 +18,15 @@ object BFInterpreter:
   inline def FState[F[_] : MemoryState] = summon
   inline def FSyn[F[_]   : Sync]        = summon
 
-  def execute[F[_]](op: Op)
-    (using MS: MemoryState[F], S: Sync[F], M: Monad[F]): F[Unit] =
+  def execute[F[_] : MemoryState : Monad : Sync]
+    (op: Op): F[Unit] =
     for
       mem <- FState.get
       _   <- dispatch[F](op, mem)
       _   <- FState modify (m => update(op, m))
     yield ()
 
-  def dispatch[F[_] : Sync : MemoryState : Monad]
+  def dispatch[F[_] : MemoryState : Monad : Sync]
     (op: Op, mem: BFMemory): F[Unit] =
     op match
       case Jump(ops) =>

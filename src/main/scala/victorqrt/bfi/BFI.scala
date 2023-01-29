@@ -34,7 +34,7 @@ object BFI extends IOApp:
                 .use(_.mkString.pure[IO])
       prog <- IO(BFParser(src))
       mem  <- stateRef(BFMemory.apply)
-      _    <- prog.map(execute[IO](_)(using mem))
+      _    <- prog.map(execute[IO](_)(using mem, mem.monad, Sync[IO]))
                   .sequence
     yield
       ExitCode.Success
