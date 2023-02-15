@@ -1,8 +1,9 @@
-.bloop
-.bsp
-.metals
-.vscode
-bfi.build_artifacts.txt
-project/.bloop/
-project/metals.sbt
-target
+**/.bsp
+**/.metals
+**/.scala-build
+**/.vscode
+**/*.build_artifacts.txt
+**/*.jar
+
+bfi
+dependencies.scala

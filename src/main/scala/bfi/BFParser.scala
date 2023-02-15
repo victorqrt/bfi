@@ -1,7 +1,6 @@
-package victorqrt.bfi
+package bfi
 
 
-import cats.effect._
 import scala.util.parsing.combinator._
 
 

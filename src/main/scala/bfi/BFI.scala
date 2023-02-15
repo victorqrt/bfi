@@ -1,4 +1,4 @@
-package victorqrt.bfi
+package bfi
 
 
 import cats.data._
@@ -7,24 +7,14 @@ import cats.implicits._
 import cats.mtl._
 import scala.io.Source
 
-
 import BFInterpreter._
 
 
 object BFI extends IOApp:
 
-  val usage = IO {
+  lazy val usage = IO:
     println("Usage: ./bfi <script>")
-    sys.exit(0) }
-
-  def stateRef[S](s: S) =
-    for
-      r <- Ref[IO] of s
-    yield new Stateful[IO, S] {
-      def monad     = summon
-      def get       = r.get
-      def set(s: S) = r set s
-    }
+    sys.exit(0)
 
   def run(args: List[String]): IO[ExitCode] =
     for
@@ -32,9 +22,15 @@ object BFI extends IOApp:
       src  <- Resource
                 .fromAutoCloseable(IO(Source.fromFile(file.toString)))
                 .use(_.mkString.pure[IO])
+
       prog <- IO(BFParser(src))
-      mem  <- stateRef(BFMemory.apply)
-      _    <- prog.map(execute[IO](_)(using mem, mem.monad, Sync[IO]))
-                  .sequence
+
+      mem  <- Ref[IO] of BFMemory()
+      memS  = new Stateful[IO, BFMemory]:
+                 def monad            = summon
+                 def get              = mem.get
+                 def set(s: BFMemory) = mem set s
+
+      _    <- prog.map(execute[IO](_)(using memS, Sync[IO])).sequence
     yield
       ExitCode.Success

@@ -2,10 +2,7 @@
 
 ## Build
 
-Requirements:
-- `make`
-- `sbt`
-- GraalVM's `native-image` tool to build a standalone binary
+Requirements: `make`, `scala-cli`
 
 Run `make` to build a jar, `make native` to build a binary.
 

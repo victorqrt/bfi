@@ -1,11 +1,9 @@
-package victorqrt.bfi
+package bfi
 
 
-import cats.Monad
 import cats.effect._
 import cats.implicits._
 import cats.mtl._
-
 
 import BFParser._
 import BFParser.Op._
@@ -13,39 +11,41 @@ import BFParser.Op._
 
 object BFInterpreter:
 
-  type MemoryState[F[_]] = Stateful[F, BFMemory]
+  type MemoryState[F[_]]                = Stateful[F, BFMemory]
+  inline def mstate[F[_] : MemoryState] = summon[MemoryState[F]]
+  inline def sync  [F[_] : Sync]        = summon[Sync[F]]
 
-  inline def FState[F[_] : MemoryState] = summon
-  inline def FSyn[F[_]   : Sync]        = summon
 
-  def execute[F[_] : MemoryState : Monad : Sync]
+  def execute[F[_] : MemoryState : Sync]
     (op: Op): F[Unit] =
     for
-      mem <- FState.get
+      mem <- mstate.get
       _   <- dispatch[F](op, mem)
-      _   <- FState modify (m => update(op, m))
+      _   <- mstate modify (m => update(op, m))
     yield ()
 
-  def dispatch[F[_] : MemoryState : Monad : Sync]
+
+  def dispatch[F[_] : MemoryState : Sync]
     (op: Op, mem: BFMemory): F[Unit] =
     op match
       case Jump(ops) =>
         if mem.zero then ().pure[F]
         else for
           _   <- ops.map(execute[F]).sequence
-          m   <- FState.get
+          m   <- mstate.get
           res <- dispatch[F](op, m)
         yield res
 
       case Read  =>
         for
-          c <- FSyn blocking Console.in.read.toChar
-          _ <- FState modify (_ updated c.toByte)
+          c <- sync blocking Console.in.read.toChar
+          _ <- mstate modify (_ updated c.toByte)
         yield ()
 
-      case Print => FSyn delay print(mem.get.toChar)
+      case Print => sync delay print(mem.get.toChar)
 
       case _     => ().pure[F]
+
 
   def update(e: Op, mem: BFMemory): BFMemory =
     e match
