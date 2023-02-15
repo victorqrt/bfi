@@ -18,4 +18,6 @@ native: bfi
 	strip -s bfi
 	[ -x "$(shell command -v upx)" ] && upx bfi
 
-.PHONY: all clean native
+re: clean all
+
+.PHONY: all clean native re
